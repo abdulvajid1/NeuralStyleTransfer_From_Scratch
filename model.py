@@ -5,7 +5,7 @@ from torchvision import models
 from torch import Tensor
 from PIL import Image
 from torchvision import transforms
-
+from tqdm import tqdm
  
 img_size = (256, 256)
 trf = transforms.Compose([
@@ -42,15 +42,17 @@ def train(model: nn.Module, org_img: Tensor, style_img: Tensor, alpha=0.99, beta
     
     gen_img = org_img.clone().requires_grad_(True)
     optimizer = optim.AdamW([gen_img], lr=1e-3)
-    
-    # pass three images to model
-    gen_features = model(gen_img.to(device))
-    org_features = model(org_img.to(device))
-    style_features = model(style_img.to(device))
-    
-    for epoch in num_epoch:
-        content_loss, style_loss = 0
-        for gen_feature, org_feature, style_feature in zip(gen_features, org_features, style_features):
+
+    for epoch in tqdm(range(num_epoch)):
+        # print(epoch)
+        gen_features = model(gen_img.to(device))
+        org_features = model(org_img.to(device))
+        style_features = model(style_img.to(device))
+        
+        content_loss = 0; style_loss = 0
+        for gen_feature, org_feature, style_feature in zip(gen_features,
+                                                           org_features,
+                                                           style_features):
             
             # calc content loss by mse
             content_loss += torch.mean((org_feature - gen_feature)**2)
@@ -73,8 +75,9 @@ def train(model: nn.Module, org_img: Tensor, style_img: Tensor, alpha=0.99, beta
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    
-        if epoch+1 % 50 == 0:
+        # print(epoch + 1 % 10 == 0)
+        if (epoch+1) % 10 == 0:
+            print('saving img...')
             img = reverse_trf(gen_img)
             img.save(f"output_{epoch}.jpg")
             
@@ -87,12 +90,13 @@ def main():
     
     alpha = 0.99
     beta = 1.0 - alpha
-    num_epoch = 100
+    num_epoch = 200
     
     org_img = load_img(org_img_path)
     style_img = load_img(style_img_path)
     
     model = VGG().to(device)
+    model.eval()
     
     train(model, org_img, style_img, alpha, beta, num_epoch, device)
     
