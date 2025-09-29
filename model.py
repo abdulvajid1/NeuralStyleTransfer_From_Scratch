@@ -8,7 +8,7 @@ from torchvision import transforms
 from tqdm import tqdm
 from torchvision.utils import save_image
  
-img_size = (512, 512)
+img_size = (256, 256)
 trf = transforms.Compose([
         transforms.CenterCrop((512, 512)),
         transforms.Resize(img_size),
@@ -38,8 +38,8 @@ class VGG(nn.Module):
             
 def train(model: nn.Module, org_img: Tensor, style_img: Tensor, alpha=0.99, beta=0.01, num_epoch=100, device='cuda'):
     
-    gen_img = org_img.clone().to(device).requires_grad_(True)
-    optimizer = optim.AdamW([gen_img], lr=1e-3)
+    gen_img = torch.rand_like(org_img).to(device).requires_grad_(True)
+    optimizer = optim.Adam([gen_img], lr=1e-1)
 
     for epoch in tqdm(range(num_epoch)):
         # print(epoch)
@@ -74,7 +74,7 @@ def train(model: nn.Module, org_img: Tensor, style_img: Tensor, alpha=0.99, beta
         loss.backward()
         optimizer.step()
         # print(epoch + 1 % 10 == 0)
-        if (epoch+1) % 50 == 0:
+        if (epoch+1) % 100 == 0:
             print('saving img...')
             save_image(gen_img.detach().cpu(), f"outputs/output3_{epoch}.jpg")
             
@@ -85,9 +85,9 @@ def main():
     style_img_path = 'style2.jpeg'
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    alpha = 0.70
-    beta = 0.01
-    num_epoch = 2000
+    alpha = 2.0
+    beta = 1e-5
+    num_epoch = 5000
     
     org_img = load_img(org_img_path)
     style_img = load_img(style_img_path)
