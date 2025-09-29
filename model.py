@@ -6,17 +6,15 @@ from torch import Tensor
 from PIL import Image
 from torchvision import transforms
 from tqdm import tqdm
+from torchvision.utils import save_image
  
-img_size = (256, 256)
+img_size = (512, 512)
 trf = transforms.Compose([
         transforms.CenterCrop((512, 512)),
         transforms.Resize(img_size),
         transforms.ToTensor()
     ]) 
 
-reverse_trf = transforms.Compose([
-    transforms.ToPILImage()
-])
 
 def load_img(path):
     img = trf(Image.open(path))
@@ -40,16 +38,16 @@ class VGG(nn.Module):
             
 def train(model: nn.Module, org_img: Tensor, style_img: Tensor, alpha=0.99, beta=0.01, num_epoch=100, device='cuda'):
     
-    gen_img = org_img.clone().requires_grad_(True)
+    gen_img = org_img.clone().to(device).requires_grad_(True)
     optimizer = optim.AdamW([gen_img], lr=1e-3)
 
     for epoch in tqdm(range(num_epoch)):
         # print(epoch)
-        gen_features = model(gen_img.to(device))
+        gen_features = model(gen_img)
         org_features = model(org_img.to(device))
         style_features = model(style_img.to(device))
         
-        content_loss = 0; style_loss = 0
+        content_loss = style_loss = 0
         for gen_feature, org_feature, style_feature in zip(gen_features,
                                                            org_features,
                                                            style_features):
@@ -76,21 +74,20 @@ def train(model: nn.Module, org_img: Tensor, style_img: Tensor, alpha=0.99, beta
         loss.backward()
         optimizer.step()
         # print(epoch + 1 % 10 == 0)
-        if (epoch+1) % 10 == 0:
+        if (epoch+1) % 50 == 0:
             print('saving img...')
-            img = reverse_trf(gen_img)
-            img.save(f"output_{epoch}.jpg")
+            save_image(gen_img.detach().cpu(), f"outputs/output3_{epoch}.jpg")
             
 
     
 def main():
     org_img_path = 'Takamura.jpg'
-    style_img_path = 'style.jpg'
+    style_img_path = 'style2.jpeg'
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    alpha = 0.99
-    beta = 1.0 - alpha
-    num_epoch = 200
+    alpha = 0.70
+    beta = 0.01
+    num_epoch = 2000
     
     org_img = load_img(org_img_path)
     style_img = load_img(style_img_path)
