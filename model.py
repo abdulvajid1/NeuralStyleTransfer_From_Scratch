@@ -81,7 +81,7 @@ def train(model: nn.Module, org_img: Tensor, style_img: Tensor, alpha=0.99, beta
 
     
 def main():
-    org_img_path = 'Takamura.jpg'
+    org_img_path = 'robot.jpg'
     style_img_path = 'style2.jpeg'
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
